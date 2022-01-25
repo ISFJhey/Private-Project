@@ -48,6 +48,7 @@ const vectorSource = new VectorSource({
   features: features,
   wrapX: false,
 });
+
 const vector = new VectorLayer({
   source: vectorSource,
   style: function (feature) {
@@ -61,13 +62,13 @@ baseMap = new ol.layer.Tile({
 	})
 });
 	
-const map = new Map({
+const map = new ol.Map({
   layers: [baseMap, vector],
   target: document.getElementById('map'),
-  view: new View({
-    center: [0, 0],
-    zoom: 2,
-  }),
+  view: new ol.View({
+    center: [127.0437, 37.6477],
+    zoom: 4
+  })
 });
 
 let point = null;
