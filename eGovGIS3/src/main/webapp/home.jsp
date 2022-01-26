@@ -13,8 +13,9 @@
 	height: 780px;
 	width: 100%;
 }
-.float{
-border: 1px solid #2a5dc5;
+
+.float {
+	border: 1px solid #2a5dc5;
 	border-radius: 5px;
 	background-color: #2a5dc5;
 	font-size: 15px;
@@ -23,7 +24,45 @@ border: 1px solid #2a5dc5;
 	position: absolute;
 	top: 30px;
 	left: -50px;
-	
+}
+
+.ol-tooltip {
+	position: relative;
+	background: rgba(0, 0, 0, 0.5);
+	border-radius: 4px;
+	color: white;
+	padding: 4px 8px;
+	opacity: 0.7;
+	white-space: nowrap;
+	font-size: 12px;
+	cursor: default;
+	user-select: none;
+}
+
+.ol-tooltip-measure {
+	opacity: 1;
+	font-weight: bold;
+}
+
+.ol-tooltip-static {
+	background-color: #ffcc33;
+	color: black;
+	border: 1px solid white;
+}
+
+.ol-tooltip-measure:before, .ol-tooltip-static:before {
+	border-top: 6px solid rgba(0, 0, 0, 0.5);
+	border-right: 6px solid transparent;
+	border-left: 6px solid transparent;
+	content: "";
+	position: absolute;
+	bottom: -6px;
+	margin-left: -7px;
+	left: 50%;
+}
+
+.ol-tooltip-static:before {
+	border-top-color: #ffcc33;
 }
 </style>
     
@@ -35,11 +74,19 @@ border: 1px solid #2a5dc5;
 	<div id="popup">
 		<div id="popup-content"></div>
 	</div>
+	
+	<form>
+		<label>drawing type</label>
+		<select id="type">
+			<option value="LineString">LineString</option>
+		</select>
+	</form>
 
 	<script>
 	var container = document.getElementById('popup');
 	var content1 = document.getElementById('popup-content');
 	var hover=null;
+	
 	var Feature = ol.Feature;
 	var Map = ol.Map;
 	var VectorLayer = ol.layer.Vector;
@@ -56,39 +103,72 @@ border: 1px solid #2a5dc5;
 	var {LineString, Point} = ol.geom;
 	var {getVectorContext} = ol.render;
 	
-	//피쳐 생성
-	var point1 = new ol.Feature({
+	var Draw = ol.interaction.Draw;
+	var Overlay = ol.Overlay;
+	var OSM = ol.source;
+	var TileLayer = ol.layer.Tile;
+	var {getArea, getLength} = ol.sphere;
+	var {unByKey} = ol.Observable;
+	
+	//시장 피쳐 생성
+	var market1 = new ol.Feature({
 		geometry: new ol.geom.Point(ol.proj.fromLonLat([126.97, 37.56])),
 		name: '시장1'
 	});
-	var point2 = new ol.Feature({
+	var market2 = new ol.Feature({
 		geometry: new ol.geom.Point(ol.proj.fromLonLat([126.98, 37.562])),
 		name: '시장2'
 	});
 
-	//피쳐 담아두는 소스 생성, 피쳐 담기
+	//시장 피쳐 담아두는 소스 생성, 피쳐 담기
 	const vectorSource = new VectorSource({
-		features: [point1, point2]
+		features: [market1, market2]
 	});
 
-	//피쳐 소스 벡터 레이어 생성
-	const vector = new VectorLayer({
-	  source: vectorSource,
+	//시장 벡터 레이어 생성
+	const market = new VectorLayer({
+		
+	 	source: vectorSource,
 	  /* style: function (feature) {
 	    return styles[feature.get('size')];   //이 코드 유용하다. 스타일을 동기적으로 할 수 있을수도 */
-	  style: new Style({
+	  	style: new Style({
 		  
-		  image: new CircleStyle({
-		      radius: 5,
-		      fill: new Fill({color: '#ff3700'}),
-		      stroke: new Stroke({color: '#ff3700', width: 0.6})
+		  	image: new CircleStyle({
+		      	radius: 5,
+		      	fill: new Fill({color: '#ff3700'}),
+		      	stroke: new Stroke({color: '#ff3700', width: 0.6})
 		    })
-		  })
+		})
+	});
+	
+	//마트 피쳐 생성
+	//마트 소스 생성, 피쳐담기
+	//마트 벡터 레이어 생성
+	
+	//경로선 벡터 레이어 생성
+	const drawingLine = new VectorLayer({
+		source: new VectorSource(),
+		style: new Style({
+			fill: new Fill({
+		    	color: 'rgba(255, 255, 255, 0.2)',
+		    }),
+		    stroke: new Stroke({
+		    	color: '#ffcc33',
+		    	width: 2,
+		    }),
+		    image: new CircleStyle({
+		    	radius: 7,
+		    	fill: new Fill({
+		        	color: '#ffcc33',
+		      	}),
+		    }),
+		}),
 	});
 
 	//배경지도 레이어 생성
 	const baseMap = new ol.layer.Tile({
 		source: new ol.source.OSM({
+			url : 'https://{a-c}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png'
 		})
 	});
 	
@@ -96,7 +176,7 @@ border: 1px solid #2a5dc5;
 		
 	//지도 객체에 레이어 지정 
 	const map = new ol.Map({
-	  layers: [baseMap, vector],
+	  layers: [baseMap, market, drawingLine],
 	  overlays: [mapOverlay],
 	  target: document.getElementById('map'), //지도를 표현할 div 요소를 지정 
 	  view: new ol.View({
@@ -107,7 +187,141 @@ border: 1px solid #2a5dc5;
 	    //projection:'EPSG:4326'
 	  })
 	});
+	
+	//경로그리기, 거리 계산 시작
+	let sketch;
+	let helpTooltipElement;
+	let helpTooltip;
+	let measureTooltipElement;
+	let measureTooltip;
+	const continueLineMsg = '경로그리기를 끝내려면 더블클릭하세용';
+	
+	const pointerMoveHandler = function(evt){
+		if(evt.dragging){
+			return;
+		}
+		let helpMsg = '경로그리기를 시작하려면 클릭하세용';
+		if(sketch){
+			const geom = sketch.getGeometry();
+			if(geom instanceof LineString){
+				helpMsg=continueLineMsg;
+			}
+		}
+		helpTooltipElement.innerHTML = helpMsg;
+		helpTooltip.setPosition(evt.coordinate);
+		helpTooltipElement.classList.remove('hidden');
+	}
+	
+	map.on('pointermove', pointerMoveHandler);
+	map.getViewport().addEventListener('mouseout', function(){
+		helpTooltipElement.classList.add('hidden');
+	});
+	
+	const typeSelect = document.getElementById('type');
+	let draw;
 
+	const formatLength = function(line){
+		const length = getLength(line);
+		let output;
+		if(length>100){
+			output = Math.round((length/1000)*100)/100 + '' + 'km';
+		}else{
+			output = Math.round(length*100)/100 + '' + 'm';
+		}
+		return output;
+	}
+	
+	function addInteraction(){
+		draw = new Draw({
+			source: new VectorSource(),
+			type: typeSelect.value,
+			style: new Style({
+				fill: new Fill({
+					color: 'rgba(255, 255, 255, 0.2)',
+				}),
+				stroke: new Stroke({
+			        color: 'rgba(0, 0, 0, 0.5)',
+			        lineDash: [10, 10],
+			        width: 2,
+			    }),
+			    image: new CircleStyle({
+			    	radius: 5,
+			        stroke: new Stroke({
+			          color: 'rgba(0, 0, 0, 0.7)',
+			        }),
+			        fill: new Fill({
+			          color: 'rgba(255, 255, 255, 0.2)',
+			        }),
+			    }),
+			}),
+		});
+		map.addInteraction(draw);
+		createMeasureTooltip();
+		createHelpTooltip();
+		
+		let listener;
+		draw.on('drawstart', function(evt){
+			sketch = evt.feature;
+			let tooltipCood = evt.coordinate;
+			listener = sketch.getGeometry().on('change', function(evt){
+				const geom = evt.target;
+				let output;
+				if(geom instanceof LineString) {
+					output = formatLength(geom);
+					tooltipCoord = geom.getLastCoordinate();
+				}
+				measureTooltipElement.innerHTML = output;
+				measureTooltip.setPosition(tooltipCoord);
+			});
+		});
+		
+		draw.on('drawend', function(){
+			measureTooltipElement.className = 'ol-tooltip ol-tooltip-static';
+			measureTooltip.setOffset([0, -7]);
+			//unset sketch
+			sketch = null;
+			//unset tooltip so that a new one can be created
+			measureTooltipElement = null;
+		    createMeasureTooltip();
+		    unByKey(listener);
+		})
+	}
+	
+	//creates a new help tooltip
+	function createHelpTooltip(){
+		if(helpTooltipElement){
+			helpTooltipElement.parentNode.removeChild(helpTooltipElement);
+		}
+		helpTooltipElement = document.createElement('div');
+			helpTooltipElement.className = 'ol-tooltip hidden';
+			helpTooltip = new Overlay({
+		    	element: helpTooltipElement,
+		    	offset: [15, 0],
+		    	positioning: 'center-left',
+		  	});
+		map.addOverlay(helpTooltip);
+	}
+	
+	//creates a new measure tooltip
+	function createMeasureTooltip() {
+  		if (measureTooltipElement) {
+    		measureTooltipElement.parentNode.removeChild(measureTooltipElement);
+  		}
+  		measureTooltipElement = document.createElement('div');
+  		measureTooltipElement.className = 'ol-tooltip ol-tooltip-measure';
+  		measureTooltip = new Overlay({
+    		element: measureTooltipElement,
+    		offset: [0, -15],
+    		positioning: 'bottom-center',
+    		stopEvent: false,
+    		insertFirst: false,
+  		});
+  		map.addOverlay(measureTooltip);
+	}
+	
+	addInteraction();
+	//경로그리기, 거리 계산 끝
+	
 	//마우스 커서 위치에 대한 지도 좌표를 받아, 가까운 피쳐를 찾아 피드백 시각화 하는 함수(displaySnap) 선언
 	let point = null;
 	let line = null;
@@ -142,22 +356,22 @@ border: 1px solid #2a5dc5;
 	  displaySnap(coordinate);
 	  
 	  var cursorCoor = evt.coordinate;
-	  //커서가 마커위에 있을 경우 포인터 아이콘으로 변경
+	  //커서가 피쳐 위에 있을 경우 포인터 아이콘으로 변경
 	  map.getTargetElement().style.cursor = map.hasFeatureAtPixel(evt.pixel) ? 'pointer': '';
-	  //커서에 마커가 없을 경우
+	  //커서에 피쳐가 없을 경우
 	  if(hover!=null){
 		  hover=null;
 		}
-	  //커서에 있는 마커 hover에 저장
+	  //커서에 있는 피쳐 hover에 저장
 	  map.forEachFeatureAtPixel(evt.pixel, function(f) {
 			hover = f;
 			return true;
 		});
-		//마커가 있을 경우
+		//피쳐가 있을 경우
 		if(hover){
 			var content =
 					"<div class='float'>"
-                  	+ hover.get('name') //이름 값 뽑기
+	                 	+ hover.get('name') //이름 값 뽑기
 					+ "</div>";
 			
 			//popup-content 부분에 content를 넣어줌
@@ -168,7 +382,7 @@ border: 1px solid #2a5dc5;
 		}else{
 			content1.innerHTML = '';
 		}
-
+		console.log(hover);
 	});
 
 	//마우스 커서를 클릭할 때 dispalySnap 함수 호출
@@ -190,7 +404,7 @@ border: 1px solid #2a5dc5;
 	});
 
 	//포인트, 라인 그려주기 함수
-	vector.on('postrender', function (evt) {
+	market.on('postrender', function (evt) {
 	  const vectorContext = getVectorContext(evt);
 	  vectorContext.setStyle(style);
 	  if (point !== null) {
