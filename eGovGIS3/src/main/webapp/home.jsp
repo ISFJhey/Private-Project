@@ -10,8 +10,11 @@
 
 <style>
 #map {
-	height: 780px;
+	height:100%;
 	width: 100%;
+}
+html, body{
+	height:100%;
 }
 
 .float {
@@ -373,7 +376,6 @@
 					"<div class='float'>"
 	                 	+ hover.get('name') //이름 값 뽑기
 					+ "</div>";
-			
 			//popup-content 부분에 content를 넣어줌
 			content1.innerHTML = content;
 			
