@@ -125,31 +125,6 @@ html, body{
 	var {unByKey} = ol.Observable;
 	var {get} = ol.proj;
 	
-/* 	document.getElementById('set-source').onclick = function () {
-		//market.setSource(marketSource);
-		for (var i = 0; i < market.getSource().getFeatures().length; i++) {
-		var name = market.getSource().getFeatures()[i].A.name.substring(0,2);
-			if (name == '시장') {
-				market.getSource().getFeatures()[i].setVisible(true);
-			}
-		}
-	};
-	document.getElementById('unset-source').onclick = function () {
-		market.setSource(null);
-	};
-	document.getElementById('set-mart').onclick = function () {
-		mart.setSource(martSource);
-	};
-	document.getElementById('unset-mart').onclick = function () {
-		mart.setSource(null);
-	};
-	document.getElementById('set-cafe').onclick = function () {
-		cafe.setSource(cafeSource);
-	};
-	document.getElementById('unset-cafe').onclick = function () {
-		cafe.setSource(null);
-	}; */
-	
 	//시장 피쳐 생성
 	var market1 = new ol.Feature({
 		geometry: new ol.geom.Point(ol.proj.fromLonLat([126.97, 37.56])),
@@ -175,28 +150,6 @@ html, body{
 		geometry: new ol.geom.Point(ol.proj.fromLonLat([126.9662, 37.4976])),
 		name: '시장6'
 	});
-	
-	//시장 피쳐 담아두는 소스 생성, 피쳐 담기
-/* 	const marketSource = new VectorSource({
-		features: [
-			market1, market2, market3, market4, market5, market6, 
-			mart1, mart2, mart3, mart4, mart5, mart6,
-			cafe1, cafe2, cafe3, cafe4, cafe5, cafe6
-			]
-	});
-
-	//시장 벡터 레이어 생성
-	const market = new VectorLayer({
-		name: 'market',
-	 	source: marketSource,
-	  	style: new Style({
-		  	image: new CircleStyle({
-		      	radius: 5,
-		      	fill: new Fill({color: '#ff3700'}),
-		      	stroke: new Stroke({color: '#000000', width: 0.6})
-		    })
-		})
-	}); */
 	
 	//마트 피쳐 생성
 	var mart1 = new ol.Feature({
@@ -224,7 +177,7 @@ html, body{
 		name: '마트6'
 	});
 	
-	//마트 피쳐 담아두는 소스 생성, 피쳐 담기
+	/* //마트 피쳐 담아두는 소스 생성, 피쳐 담기
 	const martSource = new VectorSource({
 		features: [mart1, mart2, mart3, mart4, mart5, mart6]
 	});
@@ -240,7 +193,7 @@ html, body{
 		      	stroke: new Stroke({color: '#000000', width: 0.6})
 		    })
 		})
-	});
+	}); */
 	
 	//카페 피쳐 생성
 	var cafe1 = new ol.Feature({
@@ -268,7 +221,7 @@ html, body{
 		name: '카페6'
 	});
 	
-	//카페 피쳐 담아두는 소스 생성, 피쳐 담기
+	/* //카페 피쳐 담아두는 소스 생성, 피쳐 담기
 	const cafeSource = new VectorSource({
 		features: [cafe1, cafe2, cafe3, cafe4, cafe5, cafe6]
 	});
@@ -284,7 +237,7 @@ html, body{
 		      	stroke: new Stroke({color: '#000000', width: 0.6})
 		    })
 		})
-	});
+	}); */
 	
 	//시장 피쳐 담아두는 소스 생성, 피쳐 담기
 	const marketSource = new VectorSource({
@@ -298,14 +251,9 @@ html, body{
 	const market = new VectorLayer({
 		name: 'market',
 	 	source: marketSource,
-	  	style: new Style({
-		  	image: new CircleStyle({
-		      	radius: 5,
-		      	fill: new Fill({color: '#ff3700'}),
-		      	stroke: new Stroke({color: '#000000', width: 0.6})
-		    })
-		})
+	  	style: new Style({})
 	});
+	
 	//경로선 벡터 레이어 생성
 	const styleFunction = function (feature) {
 		const geometry = feature.getGeometry();
@@ -324,7 +272,7 @@ html, body{
 	    	const dy = end[1] - start[1];
 	    	const rotation = Math.atan2(dy, dx);
 	    	// arrows
-	    	styles.push(
+	    	/* styles.push(
 	      		new Style({
 	        		geometry: new Point(end),
 	        		image: new Icon({
@@ -334,7 +282,7 @@ html, body{
 	          			rotation: -rotation,
 	        		}),
 	      		})
-	    	);
+	    	); */
 	  	});
 		return styles;
 	};
@@ -372,6 +320,7 @@ html, body{
 	  })
 	});
 	
+	//시설마다 다른색상 입히기
 	for (var i = 0; i < market.getSource().getFeatures().length; i++) {
 		var name = market.getSource().getFeatures()[i].A.name.substring(0,2);
 
@@ -380,9 +329,9 @@ html, body{
 		if (name == '마트') {
 			color1 = '#1844af';
 		} else if (name == '시장') {
-			color1 = '#fef33f';
-		} else {
 			color1 = '#ff3700';
+		} else {
+			color1 = '#fef33f';
 		}
 		
 		var style2 = new Style({
@@ -396,36 +345,82 @@ html, body{
 		market.getSource().getFeatures()[i].setStyle(style2);
 	}
 	
+	//시설 피쳐포인트 온오프 기능
 	document.getElementById('set-source').onclick = function () {
-		//market.setSource(marketSource);
 		for (var i = 0; i < market.getSource().getFeatures().length; i++) {
-		var name = market.getSource().getFeatures()[i].A.name.substring(0,2);
+			var name = market.getSource().getFeatures()[i].A.name.substring(0,2);
 			if (name == '시장') {
-				//market.getSource().getFeatures()[i].setStyle();
+				var style = new Style({
+					image: new CircleStyle({
+				      	radius: 5,
+				      	fill: new Fill({color: '#ff3700'}),
+				      	stroke: new Stroke({color: '#000000', width: 0.6})
+				    })	
+				});
+				market.getSource().getFeatures()[i].setStyle(style);
 			}
 		}
 	};
+	
 	document.getElementById('unset-source').onclick = function () {
-		//market.setSource(null);
 		for (var i = 0; i < market.getSource().getFeatures().length; i++) {
-		var name = market.getSource().getFeatures()[i].A.name.substring(0,2);
+			var name = market.getSource().getFeatures()[i].A.name.substring(0,2);
 			if (name == '시장') {
 				market.getSource().getFeatures()[i].setStyle(null);
 			}
 		}
 	};
+	
 	document.getElementById('set-mart').onclick = function () {
-		mart.setSource(martSource);
+		for (var i = 0; i < market.getSource().getFeatures().length; i++) {
+			var name = market.getSource().getFeatures()[i].A.name.substring(0,2);
+			if (name == '마트') {
+				var style = new Style({
+					image: new CircleStyle({
+				      	radius: 5,
+				      	fill: new Fill({color: '#1844af'}),
+				      	stroke: new Stroke({color: '#000000', width: 0.6})
+				    })	
+				});
+				market.getSource().getFeatures()[i].setStyle(style);
+			}
+		}
 	};
+	
 	document.getElementById('unset-mart').onclick = function () {
-		mart.setSource(null);
+		for (var i = 0; i < market.getSource().getFeatures().length; i++) {
+		var name = market.getSource().getFeatures()[i].A.name.substring(0,2);
+			if (name == '마트') {
+				market.getSource().getFeatures()[i].setStyle(null);
+			}
+		}
 	};
+	
 	document.getElementById('set-cafe').onclick = function () {
-		cafe.setSource(cafeSource);
+		for (var i = 0; i < market.getSource().getFeatures().length; i++) {
+			var name = market.getSource().getFeatures()[i].A.name.substring(0,2);
+			if (name == '카페') {
+				var style = new Style({
+					image: new CircleStyle({
+				      	radius: 5,
+				      	fill: new Fill({color: '#fef33f'}),
+				      	stroke: new Stroke({color: '#000000', width: 0.6}),
+				    })	
+				});
+				market.getSource().getFeatures()[i].setStyle(style);
+			}
+		}
 	};
+	
 	document.getElementById('unset-cafe').onclick = function () {
-		cafe.setSource(null);
+		for (var i = 0; i < market.getSource().getFeatures().length; i++) {
+		var name = market.getSource().getFeatures()[i].A.name.substring(0,2);
+			if (name == '카페') {
+				market.getSource().getFeatures()[i].setStyle(null);
+			}
+		}
 	};
+	//시설 피쳐포인트 온오프 기능 끝
 	
 	//경로그리기, 거리 계산 시작
 	let sketch;
@@ -518,7 +513,7 @@ html, body{
 			measureTooltipElement.className = 'ol-tooltip ol-tooltip-static';
 			measureTooltip.setOffset([0, -7]);
 			//unset sketch
-			sketch = evt.feature;
+			sketch = null;
 			//unset tooltip so that a new one can be created
 			measureTooltipElement = null;
 		    createMeasureTooltip();
@@ -638,15 +633,7 @@ html, body{
 		}
 	});
 
-	//마우스 커서를 클릭시
-	map.on('click', function (evt) {
-		
-	});
-	
-	//팝업띄우기
-	
-
-	//라인 객체 스타일 
+	//가까운 피쳐와 연결되는 라인 스타일 
 	const stroke = new Stroke({
 	  color: 'rgba(151, 95, 255,0.7)',
 	  width: 4,
@@ -659,7 +646,7 @@ html, body{
 	  }),
 	});
 
-	//포인트, 라인 그려주기 함수
+	//가까운 피쳐와 연결되는 라인 그려주기
 	market.on('postrender', function (evt) {
 	  const vectorContext = getVectorContext(evt);
 	  vectorContext.setStyle(style);
@@ -677,4 +664,3 @@ html, body{
 </body>
 
 </html>
-
